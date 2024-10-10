@@ -2,12 +2,15 @@ import { useForm, SubmitHandler } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import { PEOPLES_IMAGES } from "../../../avatar";
+import Cookies from "universal-cookie";
+import { StreamVideoClient, User } from "@stream-io/video-react-sdk";
 
 interface FormValues {
   username: string;
   name: string;
 }
 const SignInPage = () => {
+  const cookies = new Cookies();
   const schema = yup.object().shape({
     username: yup
       .string()
@@ -40,6 +43,28 @@ const SignInPage = () => {
 
       const responseData = await response.json();
       console.log(responseData);
+
+      const user: User = {
+        id: username,
+        name,
+      };
+      const myClient = new StreamVideoClient({
+        apiKey: import.meta.env.VITE_STREAM_API_KEY,
+        user,
+        token: responseData.token,
+      });
+
+      const expires = new Date();
+      expires.setDate(expires.getDate() + 1);
+      cookies.set("token", responseData.token, {
+        expires,
+      });
+      cookies.set("username", responseData.username, {
+        expires,
+      });
+      cookies.set("name", responseData.name, {
+        expires,
+      });
     } catch (error) {
       if (error instanceof Error) {
         console.error(` an error occured ${error.message}`);

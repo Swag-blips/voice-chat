@@ -1,11 +1,8 @@
-import React from 'react'
+import { StreamVideo } from "@stream-io/video-react-sdk";
+import React from "react";
 
 const Main = () => {
-  return (
-    <div>
-      
-    </div>
-  )
-}
+  return <StreamVideo client={client}></StreamVideo>;
+};
 
-export default Main
+export default Main;
