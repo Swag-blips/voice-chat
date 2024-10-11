@@ -35,5 +35,5 @@ export const useUser = () => {
     throw new Error("useUSer must be within a provider");
   }
 
-  return context;
+  return context; 
 };
