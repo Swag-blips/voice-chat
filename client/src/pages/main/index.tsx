@@ -1,27 +1,84 @@
-import { StreamVideo } from "@stream-io/video-react-sdk";
+import { Call, StreamVideo } from "@stream-io/video-react-sdk";
 import { useUser } from "../../../context/UserContext";
 import { Navigate, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import CryptoJS from "crypto-js";
 
 interface NewRoom {
   name: string;
   description: string;
 }
 
+interface Room {
+  id: string;
+  title: string;
+  description: string;
+  participantsLength: number;
+  createdBy: string;
+}
+
+type CustomCallData = {
+  description?: string;
+  title?: string;
+};
 const Main = () => {
-  const { client, user, setCall } = useUser();
+  const { client, user, setCall, isLoading } = useUser();
   const navigate = useNavigate();
   const [newRoom, setNewRoom] = useState<NewRoom>({
     name: "",
     description: "",
   });
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
 
+  const hashRoomName = (roomName: string): string => {
+    const hash = CryptoJS.SHA256(roomName).toString(CryptoJS.enc.Base64);
+
+    return hash.replace(/[^a-zA-Z0-9_-]/g, "");
+  };
+
+  const getCallInfo = async (call: Call): Promise<Room> => {
+    const callInfo = await call.get();
+    const customData = callInfo.call.custom;
+    const { title, description } = (customData || {}) as CustomCallData;
+    const participantsLength = callInfo.members.length ?? 0;
+    const createdBy = callInfo.call.created_by.name ?? "";
+    const id = callInfo.call.id ?? "";
+
+    return {
+      id,
+      title: title ?? "",
+      description: description ?? "",
+      participantsLength,
+      createdBy,
+    };
+  };
+
+  const fetchListOfCalls = async () => {
+    const callsQueryResponse = await client?.queryCalls({
+      filter_conditions: {
+        ongoing: true,
+      },
+      limit: 4,
+      watch: true,
+    });
+
+    if (!callsQueryResponse) {
+      alert("Error getting calls");
+    } else {
+      const roomPromises = await callsQueryResponse.calls.map((call) =>
+        getCallInfo(call)
+      );
+
+      const rooms = await Promise.all(roomPromises);
+      setAvailableRooms(rooms);
+    }
+  };
   const createRoom = async () => {
     const { name, description } = newRoom;
 
     if (!client || !user || !name || !description) return;
 
-    const call = client.call("audio_room", name);
+    const call = client.call("audio_room", hashRoomName(name));
 
     await call.join({
       create: true,
@@ -37,7 +94,11 @@ const Main = () => {
     setCall(call);
     navigate("/room");
   };
-  if (!client) return <Navigate to="/sign-in" />;
+  if (isLoading) return <h1>...</h1>;
+  if (!user || !client) {
+    return <Navigate to="/sign-in" />;
+  }
+
   return (
     <StreamVideo client={client}>
       <div className="home">
