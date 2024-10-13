@@ -1,4 +1,4 @@
-import { StreamVideoClient } from "@stream-io/video-react-sdk";
+import { Call, StreamVideoClient } from "@stream-io/video-react-sdk";
 import { createContext, ReactNode, useContext, useState } from "react";
 import React from "react";
 interface User {
@@ -11,6 +11,8 @@ interface UserContextProps {
   setUser: (user: User | null) => void;
   client: StreamVideoClient | undefined;
   setClient: (client: StreamVideoClient | undefined) => void;
+  call: Call | undefined;
+  setCall: (call: Call | undefined) => void;
 }
 
 interface UserProviderProps {
@@ -21,9 +23,12 @@ const UserContext = createContext<UserContextProps | undefined>(undefined);
 
 export const UserProvider = (props: UserProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
+  const [call, setCall] = useState<Call>();
   const [client, setClient] = useState<StreamVideoClient>();
   return (
-    <UserContext.Provider value={{ user, setUser, client, setClient }}>
+    <UserContext.Provider
+      value={{ user, setUser, client, setClient, call, setCall }}
+    >
       {props.children}
     </UserContext.Provider>
   );
@@ -35,5 +40,5 @@ export const useUser = () => {
     throw new Error("useUSer must be within a provider");
   }
 
-  return context; 
+  return context;
 };

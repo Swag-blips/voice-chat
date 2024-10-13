@@ -1,6 +1,6 @@
 import { StreamVideo } from "@stream-io/video-react-sdk";
 import { useUser } from "../../../context/UserContext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 interface NewRoom {
@@ -9,7 +9,8 @@ interface NewRoom {
 }
 
 const Main = () => {
-  const { client, user } = useUser();
+  const { client, user, setCall } = useUser();
+  const navigate = useNavigate();
   const [newRoom, setNewRoom] = useState<NewRoom>({
     name: "",
     description: "",
@@ -32,6 +33,9 @@ const Main = () => {
         },
       },
     });
+
+    setCall(call);
+    navigate("/room");
   };
   if (!client) return <Navigate to="/sign-in" />;
   return (
