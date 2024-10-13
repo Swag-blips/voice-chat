@@ -1,7 +1,7 @@
 import { Call, StreamVideo } from "@stream-io/video-react-sdk";
 import { useUser } from "../../../context/UserContext";
 import { Navigate, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CryptoJS from "crypto-js";
 
 interface NewRoom {
@@ -24,6 +24,10 @@ type CustomCallData = {
 const Main = () => {
   const { client, user, setCall, isLoading } = useUser();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (client) fetchListOfCalls();
+  }, [client]);
   const [newRoom, setNewRoom] = useState<NewRoom>({
     name: "",
     description: "",
@@ -94,6 +98,18 @@ const Main = () => {
     setCall(call);
     navigate("/room");
   };
+
+  const joinCall = async (callID: string) => {
+    const call = client?.call("audio_room", callID);
+
+    try {
+      await call?.join();
+      setCall(call);
+      navigate("/room");
+    } catch (error) {
+      alert("Error while joining call. wait for room to be live");
+    }
+  };
   if (isLoading) return <h1>...</h1>;
   if (!user || !client) {
     return <Navigate to="/sign-in" />;
@@ -124,6 +140,28 @@ const Main = () => {
             Create a room
           </button>
         </div>
+        {availableRooms.length !== 0 ? (
+          <>
+            <h2>Available rooms</h2>
+            <div className="grid">
+              {availableRooms.map((room) => (
+                <div
+                  className="card"
+                  key={room.id}
+                  onClick={() => joinCall(room.id)}
+                >
+                  <h4>{room.title}</h4>
+                  <p>{room.description}</p>
+                  <p>{room.participantsLength} participants</p>
+                  <p>Created by: {room.createdBy}</p>
+                  <div className="shine"></div>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <h2>No available rooms at the moment</h2>
+        )}
       </div>
     </StreamVideo>
   );
